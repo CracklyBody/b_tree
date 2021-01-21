@@ -6,8 +6,8 @@ class BTree(private val t: Int) {
     init {
         node = BNode(null)
     }
-    class BNode (var parent: BNode?) {
-        private var keys: MutableList<Int> = mutableListOf()
+    inner class BNode (var parent: BNode?) {
+        var keys: MutableList<Int> = mutableListOf()
         var children: MutableList<BNode> = mutableListOf()
 
         override fun hashCode(): Int {
@@ -120,4 +120,140 @@ class BTree(private val t: Int) {
         }
     }
 
+    fun search(key: Int): Boolean {
+        var search_node = node!!
+        var flag = false
+        var index_node = 0
+        if (search_node.keys.get(search_node.keys.size - 1) >= key) {
+            var i = 0
+            while (i < search_node.keys.size && !flag) {
+                if (key == search_node.keys.get(i)) flag = true
+                i++
+            }
+        }
+        while (!flag) {
+            for (child in search_node.children) {
+                if (child.keys.get(child.keys.size - 1)
+                    >= key
+                ) {
+                    for (value in child.keys) {
+                        if (key == value) {
+                            flag = true
+                            return flag
+                        }
+                    }
+                    index_node = search_node.children.indexOf(child)
+                    break
+                }
+            }
+            search_node = if (search_node.children.size != 0) search_node.children.get(index_node) else break
+        }
+        return flag
+    }
+
+    fun delete_node(bnode: BNode, key: Int) {
+        var left_right = 0
+        var flag = false
+        if (bnode.children.size == 0) {
+            var bNodeNeighbor = bnode
+            var key_del = -1
+            var i = 1
+            while (i < bnode.parent!!.keys.size && key_del == -1) {
+                if (key > bnode.parent!!.keys.get(i)) key_del = bnode.parent!!.keys.get(i)
+                i++
+            }
+            if (bnode.parent!!.children.indexOf(bnode) != 0) {
+                bNodeNeighbor = bnode.parent!!.children.get(bnode.parent!!.children.indexOf(bnode) - 1)
+                if (bNodeNeighbor.keys.size > t - 1) {
+                    bnode.parent!!.delete_key(key_del)
+                    bnode.insert_key(key_del)
+                    bnode.parent!!.insert_key(bNodeNeighbor.keys.get(bNodeNeighbor.keys.size - 1))
+                    bNodeNeighbor.delete_key(bNodeNeighbor.keys.get(bNodeNeighbor.keys.size - 1))
+                    flag = true
+                } else left_right = -1
+            } else if (bnode.parent!!.children.indexOf(bnode) != bnode.parent!!
+                    .children.size - 1 && !flag
+            ) {
+                bNodeNeighbor = bnode.parent!!.children.get(bnode.parent!!.children.indexOf(bnode) + 1)
+                if (bNodeNeighbor.keys.size > t - 1) {
+                    bnode.parent!!.delete_key(key_del)
+                    bnode.insert_key(key_del)
+                    bnode.parent!!.insert_key(bNodeNeighbor.keys.get(0))
+                    bNodeNeighbor.delete_key(bNodeNeighbor.keys.get(0))
+                    flag = true
+                } else left_right = 1
+            } else if (!flag) {
+                for (value in bnode.keys) {
+                    bnode.parent!!.children.get(bnode.parent!!.children.indexOf(bnode) + left_right)
+                        .insert_key(value)
+                }
+                bnode.parent!!.children.get(bnode.parent!!.children.indexOf(bnode) + left_right)
+                    .insert_key(key_del)
+                bnode.parent!!.delete_key(key_del)
+                bnode.remove()
+            }
+        } else {
+            var right_child = bnode
+            var left_child = bnode
+            for (i in bnode.children.indices) {
+                if (key > bnode.children.get(i).keys.get(0)) {
+                    right_child = bnode.children.get(i)
+                    left_child = bnode.children.get(i - 1)
+                    break
+                }
+            }
+            if (left_child.keys.size > t - 1) {
+                val child_key: Int = left_child.keys.get(left_child.keys.size - 1)
+                bnode.insert_key(child_key)
+                left_child.delete_key(child_key)
+                delete_node(left_child, child_key)
+            } else if (right_child.keys.size > t - 1) {
+                val child_key: Int = right_child.keys.get(0)
+                bnode.insert_key(child_key)
+                right_child.delete_key(child_key)
+                delete_node(right_child, child_key)
+            } else {
+                for (value in right_child.keys) {
+                    left_child.insert_key(value!!)
+                }
+                right_child.remove()
+                delete_node(left_child, key)
+            }
+        }
+    }
+
+    fun delete(key: Int) {
+        var search_node = node!!
+        var index_node = 0
+        if (search_node.keys.get(search_node.keys.size - 1) >= key) {
+            for (i in search_node.keys.indices) if (key == search_node.keys.get(i)) {
+                search_node.delete_key(key)
+                if (search_node.keys.size <= t - 1) delete_node(search_node, key)
+                return
+            }
+        }
+        while (true) {
+            for (child in search_node.children) {
+                if (child.keys.get(child.keys.size - 1)
+                    >= key
+                ) {
+                    for (value in child.keys) {
+                        if (key == value) {
+                            child.delete_key(key)
+                            if (child.keys.size <= t - 1) delete_node(child, key)
+                            return
+                        }
+                    }
+                    index_node = search_node.children.indexOf(child)
+                    break
+                }
+            }
+            search_node = if (search_node.children.size != 0) search_node.children.get(index_node) else break
+        }
+    }
+
+    fun insert(value: Int?): BNode? {
+        node!!.add_key(value!!)
+        return node
+    }
 }
