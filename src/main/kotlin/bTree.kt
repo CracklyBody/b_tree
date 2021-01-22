@@ -17,7 +17,7 @@ class BTree(private val parameter: Int) {
             return sum + children.size
         }
 
-        private fun add_child(child: BNode) {
+        fun add_child(child: BNode) {
             children.add(child)
             child.parent = this
         }
@@ -111,7 +111,7 @@ class BTree(private val parameter: Int) {
             if (javaClass != other?.javaClass) return false
 
             other as BNode
-
+            if(hashCode()==other.hashCode()) return true
             if (keys != other.keys) return false
             if (children != other.children) return false
             if (parent != other.parent) return false
@@ -151,6 +151,12 @@ class BTree(private val parameter: Int) {
         return flag
     }
 
+    override fun hashCode(): Int {
+        return node.hashCode()
+    }
+    override fun equals(other: Any?): Boolean {
+        return this.hashCode() == other.hashCode()
+    }
     private fun delete_node(bnode: BNode, key: Int) {
         var left_right = 0
         var flag = false
